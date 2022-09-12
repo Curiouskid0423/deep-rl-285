@@ -179,7 +179,7 @@ class RL_Trainer(object):
         paths, envsteps_this_batch = utils.sample_trajectories(
             env=self.env, 
             policy=collect_policy,
-            min_timesteps_per_batch=self.params['batch_size'], # FIXME
+            min_timesteps_per_batch=batch_size,
             max_path_length=self.params['ep_len'],
         )
 

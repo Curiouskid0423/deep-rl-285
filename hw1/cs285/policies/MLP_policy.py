@@ -126,10 +126,10 @@ class MLPPolicySL(MLPPolicy):
         # TODO: update the policy and return the loss
         assert self.training, "MLPPolicySL should only be called during training but self.training=False."
         actions = torch.FloatTensor(actions).to(ptu.device)
-        predictions = self.get_action(observations, mode='train')
-
-        loss = self.loss(predictions, actions) # Use `rsample` instead of `sample` to keep gradients
         self.optimizer.zero_grad()
+        
+        predictions = self.get_action(observations, mode='train')
+        loss = self.loss(predictions, actions) # Use `rsample` instead of `sample` to keep gradients
         loss.backward()
         self.optimizer.step()
 

@@ -29,7 +29,7 @@ def sample_trajectory(env: Env, policy: BasePolicy, max_path_length: int, render
 
         # use the most recent ob to decide what to do
         obs.append(ob)
-        ac = policy.get_action(np.array(obs)) # HINT: query the policy's get_action function
+        ac = policy.get_action(ob) # HINT: query the policy's get_action function
         ac = ac[0]
         acs.append(ac)
 
@@ -65,7 +65,7 @@ def sample_trajectories(
     print(f"Sampling eval trajectories (total {min_timesteps_per_batch})...")
     pbar = tqdm(total=min_timesteps_per_batch)
     while timesteps_this_batch < min_timesteps_per_batch:
-        path = sample_trajectory(env, policy, max_path_length=max_path_length)
+        path = sample_trajectory(env, policy, max_path_length=max_path_length, render=render)
         paths.append(path)
         path_length = get_pathlength(path)
         timesteps_this_batch += path_length
@@ -84,7 +84,7 @@ def sample_n_trajectories(
     paths = []
 
     for n in range(ntraj):
-        paths.append(sample_trajectory(env, policy, max_path_length))
+        paths.append(sample_trajectory(env, policy, max_path_length, render))
 
     return paths
 

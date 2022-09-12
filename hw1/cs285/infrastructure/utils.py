@@ -2,6 +2,7 @@ import numpy as np
 import time
 from gym import Env
 from cs285.policies.base_policy import BasePolicy
+from tqdm import tqdm
 
 ############################################
 ############################################
@@ -61,10 +62,14 @@ def sample_trajectories(
     """
     timesteps_this_batch = 0
     paths = []
+    print(f"Sampling eval trajectories (total {min_timesteps_per_batch})...")
+    pbar = tqdm(total=min_timesteps_per_batch)
     while timesteps_this_batch < min_timesteps_per_batch:
         path = sample_trajectory(env, policy, max_path_length=max_path_length)
         paths.append(path)
-        timesteps_this_batch += get_pathlength(path)
+        path_length = get_pathlength(path)
+        timesteps_this_batch += path_length
+        pbar.update(path_length)
 
     return paths, timesteps_this_batch
 

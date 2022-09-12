@@ -1,5 +1,7 @@
 import numpy as np
 import time
+from gym import Env
+from cs285.policies.base_policy import BasePolicy
 
 ############################################
 ############################################
@@ -8,16 +10,15 @@ MJ_ENV_NAMES = ["Ant-v4", "Walker2d-v4", "HalfCheetah-v4", "Hopper-v4"]
 MJ_ENV_KWARGS = {name: {"render_mode": "rgb_array"} for name in MJ_ENV_NAMES}
 MJ_ENV_KWARGS["Ant-v4"]["use_contact_forces"] = True
 
-def sample_trajectory(env, policy, max_path_length, render=False):
+def sample_trajectory(env: Env, policy: BasePolicy, max_path_length: int, render=False):
 
     # initialize env for the beginning of a new rollout
-    ob = TODO # HINT: should be the output of resetting the env
+    ob = env.reset() # HINT: should be the output of resetting the env
 
     # init vars
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
     while True:
-
         # render image of the simulated env
         if render:
             if hasattr(env, 'sim'):
@@ -27,7 +28,7 @@ def sample_trajectory(env, policy, max_path_length, render=False):
 
         # use the most recent ob to decide what to do
         obs.append(ob)
-        ac = TODO # HINT: query the policy's get_action function
+        ac = policy.get_action(np.array(obs)) # HINT: query the policy's get_action function
         ac = ac[0]
         acs.append(ac)
 
@@ -41,7 +42,7 @@ def sample_trajectory(env, policy, max_path_length, render=False):
 
         # TODO end the rollout if the rollout ended
         # HINT: rollout can end due to done, or due to max_path_length
-        rollout_done = TODO # HINT: this is either 0 or 1
+        rollout_done = 1 if (done or steps >= max_path_length) else 0 # HINT: this is either 0 or 1
         terminals.append(rollout_done)
 
         if rollout_done:
@@ -49,7 +50,8 @@ def sample_trajectory(env, policy, max_path_length, render=False):
 
     return Path(obs, image_obs, acs, rewards, next_obs, terminals)
 
-def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False):
+def sample_trajectories(
+    env: Env, policy: BasePolicy, min_timesteps_per_batch: int, max_path_length: int, render=False):
     """
         Collect rollouts until we have collected min_timesteps_per_batch steps.
 
@@ -60,12 +62,14 @@ def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, r
     timesteps_this_batch = 0
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
-
-        TODO
+        path = sample_trajectory(env, policy, max_path_length=max_path_length)
+        paths.append(path)
+        timesteps_this_batch += get_pathlength(path)
 
     return paths, timesteps_this_batch
 
-def sample_n_trajectories(env, policy, ntraj, max_path_length, render=False):
+def sample_n_trajectories(
+    env: Env, policy: BasePolicy, ntraj: int, max_path_length: int, render=False):
     """
         Collect ntraj rollouts.
 
@@ -74,7 +78,8 @@ def sample_n_trajectories(env, policy, ntraj, max_path_length, render=False):
     """
     paths = []
 
-    TODO
+    for n in range(ntraj):
+        paths.append(sample_trajectory(env, policy, max_path_length))
 
     return paths
 

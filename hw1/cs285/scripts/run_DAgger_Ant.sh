@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python cs285/scripts/run_hw1.py \
+CUDA_VISIBLE_DEVICES=2 python cs285/scripts/run_hw1.py \
     --expert_policy_file cs285/policies/experts/Ant.pkl \
     --env_name Ant-v4 \
     --expert_data cs285/expert_data/expert_data_Ant-v4.pkl \
@@ -7,10 +7,11 @@ CUDA_VISIBLE_DEVICES=0 python cs285/scripts/run_hw1.py \
     --do_dagger \
     --n_layers 3 \
     --train_batch_size 1000 \
-    --ep_len 5000 \
-    --eval_batch_size 5000 \
+    --num_agent_train_steps_per_iter 1500 \
+    --ep_len 1000 \
+    --eval_batch_size 10000 \
     --save_params \
-    --video_log_freq 1
+    --video_log_freq -1
 
     # --num_agent_train_steps_per_iter 1000 \
     # --learning_rate 0.002 \

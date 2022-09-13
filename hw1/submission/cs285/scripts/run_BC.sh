@@ -4,10 +4,9 @@ CUDA_VISIBLE_DEVICES=1 python cs285/scripts/run_hw1.py \
     --exp_name bc_ant \
     --n_iter 1 \
     --n_layers 3 \
-    --num_agent_train_steps_per_iter 12000 \
-    --batch_size 1000 \
+    --num_agent_train_steps_per_iter 2000 \
     --ep_len 1000 \
-    --eval_batch_size 20000 \
+    --eval_batch_size 10000 \
     --expert_data cs285/expert_data/expert_data_Ant-v4.pkl \
     --video_log_freq -1
 

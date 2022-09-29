@@ -12,12 +12,16 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "--expert_policy_file", "hw1/cs285/policies/experts/Ant.pkl",
-                "--env_name", "Ant-v4",
-                "--exp_name", "bc_ant",
-                "--n_iter", "1",
-                "--expert_data", "hw1/cs285/expert_data/expert_data_Ant-v4.pkl",
-                "--video_log_freq", "-1"
+                "--env_name", "InvertedPendulum-v4",
+                "--ep_len", "1000",
+                "--discount", "0.9",
+                "-n", "100",
+                "-l", "2",
+                "-s", "64",
+                "-b", "4000",
+                "-lr", "0.05",
+                "-rtg",
+                "--exp_name", "q2_b4k_lr0005_d090"
             ]
         }
     ]

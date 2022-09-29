@@ -1,0 +1,1 @@
+All commands are included in `cs285/scripts/run_<experiment_name>.sh/` script files, which are all following the format specified in the homework spec.

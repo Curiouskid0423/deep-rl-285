@@ -165,7 +165,9 @@ class RL_Trainer(object):
                         # learned dynamics model. Add this trajectory to the correct replay buffer.
                         # HINT: Look at collect_model_trajectory and add_to_replay_buffer from MBPOAgent.
                         # HINT: Use the from_model argument to ensure the paths are added to the correct buffer.
-                        pass
+                        rollout_length = self.params['mbpo_rollout_length']
+                        trajectory = self.agent.collect_model_trajectory(rollout_length=rollout_length)
+                        self.agent.add_to_replay_buffer(paths=trajectory, from_model=True)
                     # train the SAC agent
                     self.train_sac_agent()
 
@@ -189,7 +191,7 @@ class RL_Trainer(object):
         """
         :param itr:
         :param load_initial_expertdata:  path to expert data pkl file
-        :param collect_policy:  the current policy using which we collect data
+        :param collect_policy:  the  current policy using which we collect data
         :param num_transitions_to_sample:  the number of transitions we collect
         :return:
             paths: a list trajectories
@@ -197,12 +199,33 @@ class RL_Trainer(object):
             train_video_paths: paths which also contain videos for visualization purposes
         """
         # TODO: get this from previous HW
+        paths, envsteps_this_batch = utils.sample_trajectories(
+            env=self.env, 
+            policy=collect_policy,
+            min_timesteps_per_batch=num_transitions_to_sample,
+            max_path_length=self.params['ep_len'],
+        )
+
+        # collect more rollouts with the same policy, to be saved as videos in tensorboard
+        # note: here, we collect MAX_NVIDEO rollouts, each of length MAX_VIDEO_LEN
+        train_video_paths = None
+        if self.log_video:
+            print('\nCollecting train rollouts to be used for saving videos...')
+            train_video_paths = utils.sample_n_trajectories(self.env, collect_policy, MAX_NVIDEO, MAX_VIDEO_LEN, True)
 
         return paths, envsteps_this_batch, train_video_paths
 
     def train_agent(self):
         # TODO: get this from previous HW
-        pass
+        all_logs = []
+        for train_step in range(self.params['num_agent_train_steps_per_iter']):
+            # TODO sample some data from the data buffer
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample(self.params['train_batch_size'])
+
+            # TODO use the sampled data to train an agent
+            train_log = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
 
     def train_sac_agent(self):
         # TODO: Train the SAC component of the MBPO agent.
@@ -210,7 +233,13 @@ class RL_Trainer(object):
         # 1) sample a batch of data of size self.sac_params['train_batch_size'] with self.agent.sample_sac
         # 2) train the SAC agent self.agent.train_sac
         # HINT: This will look similar to train_agent above.
-        pass
+        all_logs = []
+        for _ in range(self.sac_params['num_agent_train_steps_per_iter']):
+            ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch = self.agent.sample_sac(self.sac_params['train_batch_size'])
+            train_log = self.agent.train_sac(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
+            all_logs.append(train_log)
+        return all_logs
+
 
     ####################################
     ####################################
@@ -285,7 +314,7 @@ class RL_Trainer(object):
         self.fig = plt.figure()
 
         # sample actions
-        action_sequence = self.agent.actor.sample_action_sequences(num_sequences=1, horizon=10) #20 reacher
+        action_sequence = self.agent.actor.sample_action_sequences(num_sequences=1, horizon=10) # 20 reacher
         action_sequence = action_sequence[0]
 
         # calculate and log model prediction error
@@ -309,4 +338,3 @@ class RL_Trainer(object):
         self.fig.clf()
         plt.plot(all_losses)
         self.fig.savefig(self.params['logdir']+'/itr_'+str(itr)+'_losses.png', dpi=200, bbox_inches='tight')
-

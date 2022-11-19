@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from cs285.infrastructure import sac_utils
 from cs285.infrastructure import pytorch_util as ptu
+from cs285.infrastructure.sac_utils import SquashedNormal
 from torch import nn
 from torch import optim
 import itertools
@@ -35,11 +36,23 @@ class MLPPolicySAC(MLPPolicy):
 
     @property
     def alpha(self):
-        # TODO: get this from previous HW
-        return entropy
+        # TODO: Formulate entropy term
+        # Actually, just return the temperature
+        return torch.exp(self.log_alpha)
 
     def get_action(self, obs: np.ndarray, sample=True) -> np.ndarray:
-        # TODO: get this from previous HW
+        # TODO: return sample from distribution if sampling
+        # if not sampling return the mean of the distribution 
+        
+        obs = obs if len(obs.shape) > 1 else obs[None]
+        if isinstance(obs, np.ndarray):
+            obs = ptu.from_numpy(obs)
+        
+        if sample:
+            action = self(obs).rsample()
+        else:
+            action = self(obs).mean.cpu()
+        action = ptu.to_numpy(action)
         return action
 
     # This function defines the forward pass of the network.
@@ -48,9 +61,42 @@ class MLPPolicySAC(MLPPolicy):
     # return more flexible objects, such as a
     # `torch.distributions.Distribution` object. It's up to you!
     def forward(self, observation: torch.FloatTensor):
-        # TODO: get this from previous HW
-        return action_distribution
+        # TODO: Implement pass through network, computing logprobs and apply correction for Tanh squashing
+
+        # HINT: 
+        # You will need to clip log values
+        # You will need SquashedNormal from sac_utils file 
+        assert not self.discrete, "Discrete mode not implemented for this homework"
+        batch_mean = self.mean_net(observation)
+        truncated = torch.clip(input=self.logstd, min=self.log_std_bounds[0], max=self.log_std_bounds[1])
+        squashed_distribution = SquashedNormal(batch_mean, scale=torch.exp(truncated))
+        return squashed_distribution
 
     def update(self, obs, critic):
-        # TODO: get this from previous HW
-        return actor_loss, alpha_loss, self.alpha
+        # TODO Update actor network and entropy regularizer
+        # return losses and alpha value
+        
+        # optimize policy "actor"
+        self.optimizer.zero_grad()
+        
+        action_distribution = self(obs)
+        sampled_action = action_distribution.rsample()
+        curr_action_log_prob = action_distribution.log_prob(sampled_action)
+        
+        critic_1, critic_2 = critic(obs, sampled_action)
+        min_critic = torch.minimum(critic_1, critic_2)
+        
+        actor_loss = self.alpha.detach() * curr_action_log_prob - min_critic 
+        actor_loss = actor_loss.mean()
+        
+        actor_loss.backward()
+        self.optimizer.step()
+
+        # optimize such that the entropy term converges to the negative action space dimension
+        self.log_alpha_optimizer.zero_grad() # FIXME
+        alpha_loss = -self.alpha * (curr_action_log_prob.detach() + self.target_entropy)
+        alpha_loss = alpha_loss.mean()
+        alpha_loss.backward()
+        self.log_alpha_optimizer.step()
+
+        return actor_loss.item(), alpha_loss.item(), self.alpha

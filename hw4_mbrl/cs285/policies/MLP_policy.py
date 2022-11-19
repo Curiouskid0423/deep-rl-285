@@ -2,6 +2,7 @@ import abc
 import itertools
 from torch import nn
 from torch.nn import functional as F
+from typing import Union
 from torch import optim
 
 import numpy as np
@@ -85,9 +86,27 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     ##################################
 
     # query the policy with observation(s) to get selected action(s)
-    def get_action(self, obs: np.ndarray) -> np.ndarray:
-        # TODO: get this from hw1 or hw2
-        return action
+    def get_action(self, obs: np.ndarray, mode='eval') -> Union[np.ndarray, distributions.Distribution]:
+        
+        if len(obs.shape) > 1:
+            observation = obs
+        else:
+            observation = obs[None]
+
+        # TODO return the action that the policy prescribes
+        if isinstance(observation, np.ndarray):
+            observation = torch.FloatTensor(observation).to(ptu.device)
+            
+        model = self.logits_na if self.discrete else self.mean_net
+        if mode == 'eval':
+            model.eval()
+            return self(observation).sample().detach().cpu().numpy()
+        elif mode == 'train':
+            model.train()
+            return self(observation)
+        else:
+            raise ValueError(f"Mode {mode} was passed to get_action() but not implemented.")
+
 
     # update/train this policy
     def update(self, observations, actions, **kwargs):
@@ -98,6 +117,18 @@ class MLPPolicy(BasePolicy, nn.Module, metaclass=abc.ABCMeta):
     # through it. For example, you can return a torch.FloatTensor. You can also
     # return more flexible objects, such as a
     # `torch.distributions.Distribution` object. It's up to you!
-    def forward(self, observation: torch.FloatTensor):
-        # TODO: get this from hw1 or hw2
-        return action_distribution
+    def forward(self, observation: torch.FloatTensor) -> distributions.Distribution:
+        if self.discrete:
+            logits = self.logits_na(observation)
+            action_distribution = distributions.Categorical(logits=logits)
+            return action_distribution
+        else:
+            batch_mean = self.mean_net(observation)
+            scale_tril = torch.diag(torch.exp(self.logstd))
+            batch_dim = batch_mean.shape[0]
+            batch_scale_tril = scale_tril.repeat(batch_dim, 1, 1)
+            action_distribution = distributions.MultivariateNormal(
+                batch_mean,
+                scale_tril=batch_scale_tril,
+            )
+            return action_distribution

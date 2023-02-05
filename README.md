@@ -1,1 +1,2 @@
-Assignments for [Berkeley CS 285: Deep Reinforcement Learning, Decision Making, and Control](http://rail.eecs.berkeley.edu/deeprlcourse/).
+#### Assignments for [Berkeley CS 285: Deep Reinforcement Learning](http://rail.eecs.berkeley.edu/deeprlcourse/)
+Full credit in all parts. Final Project on [ArXiv](https://arxiv.org/abs/2212.10712) and [Github](https://github.com/Curiouskid0423/rho_exploration).
